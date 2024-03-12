@@ -1,0 +1,1 @@
+The initial commit of the temperature sensor project
