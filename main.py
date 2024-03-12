@@ -130,10 +130,11 @@ def adjust_settings(values):
             key, val = row[0], row[1]
             if key == "ALERT_EMAILS":
                 SETTINGS["ALERT_EMAILS"] = val.split(",")
-            elif key == "ALERT_TEMPS":
-                SETTINGS["ALERT_TEMPS"] = [float(i) for i in val.split(",")]
             elif key in SETTINGS.keys():
                 SETTINGS[key] = val
+        elif len(row) > 2:
+            if row[0] == "ALERT_TEMPS":
+                SETTINGS["ALERT_TEMPS"] = row[2:]
 
 def check_for_alert_mode(data):
     global SETTINGS

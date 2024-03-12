@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=10
 User=imran
-ExecStart=/home/imran/bin/python3 /home/imran/projects/temp_sensor/main.py
+ExecStart=/bin/bash /home/imran/projects/temp_sensor/startup.sh
 
 [Install]
 WantedBy=multi-user.target
