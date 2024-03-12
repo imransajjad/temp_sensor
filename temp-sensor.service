@@ -1,0 +1,14 @@
+[Unit]
+Description=Temp Sensor Service
+After=network.target
+StartLimitIntervalSec=0
+[Service]
+WorkingDirectory=/home/imran/projects/temp_sensor
+Type=simple
+Restart=always
+RestartSec=10
+User=imran
+ExecStart=/home/imran/bin/python3 /home/imran/projects/temp_sensor/main.py
+
+[Install]
+WantedBy=multi-user.target
