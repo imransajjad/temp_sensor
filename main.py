@@ -19,9 +19,10 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # the file containing credentials for the service account
 SERVICE_ACCOUNT_KEY_FILE = "service-account.json"
+SPREADSHEET_ID_FILE = "spreadsheet-id.json"
 
 # The ID and range of a sample spreadsheet.
-SAMPLE_SPREADSHEET_ID = "1zru-4paYdyKorQwVoArXKOVFDSwKcgS6Ws3v2ydeRbQ"
+SPREADSHEET_ID = ""
 RANGE_ENDS = ["B","C","D","E","F"]
 
 # time format identifier
@@ -34,8 +35,14 @@ SETTINGS = {
     "NORMAL_INTERVAL": 600,
     "ALERT_INTERVAL": 60,
     "ALERT_EMAILS": "",
-    "ALERT_MODE": False
+    "ALERT_MODE": False,
+    "TIMEZONE": "GMT"
 }
+
+def get_spreadsheet_id():
+    global SPREADSHEET_ID
+    with open(SPREADSHEET_ID_FILE, 'r') as f:
+        SPREADSHEET_ID = json.loads(f.read())["SPREADSHEET_ID"]
 
 def get_credential():
     """Creates a Credential object with the correct OAuth2 authorization.
@@ -74,7 +81,7 @@ def upload_legend(devices):
         service = build("sheets", "v4", credentials=get_credential())
         sheet = service.spreadsheets()
 
-        result = (sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=LEGEND_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
+        result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
         legend_row = result.get("values", [])[0]
 
         resetted_device_names = [ d if lname=="reset" else lname for d,lname in zip(devices,legend_row[2:])]
@@ -82,7 +89,7 @@ def upload_legend(devices):
 
         new_values = {"range":LEGEND_RANGE, "values": [legend_row]}
         print(legend_row)
-        result = (sheet.values().update(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=LEGEND_RANGE, valueInputOption='RAW', body=new_values).execute())
+        result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueInputOption='RAW', body=new_values).execute())
     except HttpError as err:
             print(err)
 
@@ -93,7 +100,7 @@ def upload_time_temp(timepoint, data_pts):
         service = build("sheets", "v4", credentials=get_credential())
 
         sheet = service.spreadsheets()
-        result = (sheet.values().get(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=FULL_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
+        result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=FULL_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
 
         values = result.get("values", [])
         if not values:
@@ -112,7 +119,7 @@ def upload_time_temp(timepoint, data_pts):
         time_raw = round(timepoint.timestamp())
 
         new_values = {"range": SAMPLE_RANGE, "values": [ [time_raw] + [time_str] + data_pts ] + sample_values[:-1] }
-        result = (sheet.values().update(spreadsheetId=SAMPLE_SPREADSHEET_ID, range=SAMPLE_RANGE, valueInputOption='RAW', body=new_values).execute())
+        result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=SAMPLE_RANGE, valueInputOption='RAW', body=new_values).execute())
 
         
     except HttpError as err:
@@ -152,7 +159,7 @@ def check_for_alert_mode(data):
 
 if __name__ == "__main__":
 
-
+    get_spreadsheet_id()
     devices = get_temp_devices()
     upload_legend(devices)
     while True:

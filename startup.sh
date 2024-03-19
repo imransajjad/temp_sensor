@@ -1,3 +1,2 @@
-#!/bin/bash
 git pull
-/home/imran/bin/python3 main.py
+/home/keylimepi/bin/python3 /home/keylimepi/projects/temp_sensor/main.py
