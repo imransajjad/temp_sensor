@@ -7,7 +7,7 @@ WorkingDirectory=/home/keylimepi/projects/temp_sensor
 Type=simple
 Restart=always
 RestartSec=10
-User=imran
+User=keylimepi
 ExecStart=/bin/bash /home/keylimepi/projects/temp_sensor/startup.sh
 
 [Install]

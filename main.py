@@ -71,7 +71,10 @@ def read_time_temp(devices, decimals = 1):
         equals_pos = lines[1].find("t=")
         if equals_pos != -1:
             temp_string = lines[1][equals_pos+2:]
-            temp = round(float(temp_string) / 1000.0, decimals)
+            if SETTINGS["UNITS"] == "F":
+                temp = round(9/5*float(temp_string) + 32 / 1000.0, decimals)
+            else:
+                temp = round(float(temp_string) / 1000.0, decimals)
             data_strs.append(temp)
     return data_strs
 
@@ -145,10 +148,7 @@ def adjust_settings(values):
 
 def check_for_alert_mode(data):
     global SETTINGS
-    if SETTINGS["UNITS"] == "F":
-        alert_temps = [5/9*(f-32) for f in SETTINGS["ALERT_TEMPS"]]
-    else:
-        alert_temps = SETTINGS["ALERT_TEMPS"]
+    alert_temps = SETTINGS["ALERT_TEMPS"]
     set_alert = any([i > alert_temp for i, alert_temp in zip(data,alert_temps) ])
     if (not SETTINGS["ALERT_MODE"] and set_alert):
         print("Setting Alert Mode")
