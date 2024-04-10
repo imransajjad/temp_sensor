@@ -78,7 +78,7 @@ def read_time_temp(devices, decimals = 1):
         if equals_pos != -1:
             temp_string = lines[1][equals_pos+2:]
             if SETTINGS["UNITS"] == "F":
-                temp = round(9/5*float(temp_string) + 32 / 1000.0, decimals)
+                temp = round(9/5*float(temp_string) / 1000.0 + 32, decimals)
             else:
                 temp = round(float(temp_string) / 1000.0, decimals)
             data_strs.append(temp)
