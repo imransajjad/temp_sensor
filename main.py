@@ -6,6 +6,7 @@ import glob
 import time
 import datetime
 import json
+from functools import cache
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -60,6 +61,11 @@ def get_credential():
         sys.exit()
     return credential
 
+@cache
+def get_sheet():
+    service = build("sheets", "v4", credentials=get_credential())
+    return service.spreadsheets()
+
 def read_time_temp(devices, decimals = 1):
     """Reads the temperature from a 1-wire device"""
     data_strs = []
@@ -80,53 +86,44 @@ def read_time_temp(devices, decimals = 1):
 
 def upload_legend(devices):
     LEGEND_RANGE = "Sheet1!A49:" + RANGE_ENDS[len(devices)]
-    try:
-        service = build("sheets", "v4", credentials=get_credential())
-        sheet = service.spreadsheets()
+    sheet = get_sheet()
+    result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
+    legend_row = result.get("values", [])[0]
 
-        result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
-        legend_row = result.get("values", [])[0]
+    resetted_device_names = [ d if lname=="reset" else lname for d,lname in zip(devices,legend_row[2:])]
+    legend_row = legend_row[0:2] + resetted_device_names
 
-        resetted_device_names = [ d if lname=="reset" else lname for d,lname in zip(devices,legend_row[2:])]
-        legend_row = legend_row[0:2] + resetted_device_names
+    new_values = {"range":LEGEND_RANGE, "values": [legend_row]}
+    print(legend_row)
+    result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueInputOption='RAW', body=new_values).execute())
 
-        new_values = {"range":LEGEND_RANGE, "values": [legend_row]}
-        print(legend_row)
-        result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=LEGEND_RANGE, valueInputOption='RAW', body=new_values).execute())
-    except HttpError as err:
-            print(err)
 
 def upload_time_temp(timepoint, data_pts):
     FULL_RANGE = f"Sheet1!A32:" + RANGE_ENDS[len(data_pts)]
     SAMPLE_RANGE = f"Sheet1!A50:" + RANGE_ENDS[len(data_pts)]
-    try:
-        service = build("sheets", "v4", credentials=get_credential())
 
-        sheet = service.spreadsheets()
-        result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=FULL_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
+    sheet = get_sheet()
+    result = (sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=FULL_RANGE, valueRenderOption="UNFORMATTED_VALUE").execute())
 
-        values = result.get("values", [])
-        if not values:
-            return
-        
-        if values[0][0] == "Settings:":
-            adjust_settings(values[1:16])
-        check_for_alert_mode(data_pts)
+    values = result.get("values", [])
+    if not values:
+        return
 
-        sample_values = values[18:]
+    if values[0][0] == "Settings:":
+        adjust_settings(values[1:16])
+    check_for_alert_mode(data_pts)
 
-        time_zone = timepoint.astimezone().tzname()
-        if len(time_zone) > 3:
-            time_zone = "".join([ word[0] for word in time_zone.split(" ")])
-        time_str = timepoint.strftime(TIME_FORMAT) + time_zone
-        time_raw = round(timepoint.timestamp())
+    sample_values = values[18:]
 
-        new_values = {"range": SAMPLE_RANGE, "values": [ [time_raw] + [time_str] + data_pts ] + sample_values[:-1] }
-        result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=SAMPLE_RANGE, valueInputOption='RAW', body=new_values).execute())
+    time_zone = timepoint.astimezone().tzname()
+    if len(time_zone) > 3:
+        time_zone = "".join([ word[0] for word in time_zone.split(" ")])
+    time_str = timepoint.strftime(TIME_FORMAT) + time_zone
+    time_raw = round(timepoint.timestamp())
 
-        
-    except HttpError as err:
-        print(err)
+    new_values = {"range": SAMPLE_RANGE, "values": [ [time_raw] + [time_str] + data_pts ] + sample_values[:-1] }
+    result = (sheet.values().update(spreadsheetId=SPREADSHEET_ID, range=SAMPLE_RANGE, valueInputOption='RAW', body=new_values).execute())
+
 
 def get_temp_devices():
     """gets the 1-wire devices"""
@@ -163,18 +160,13 @@ if __name__ == "__main__":
     devices = get_temp_devices()
     upload_legend(devices)
     while True:
-        try:
-            timepoint = datetime.datetime.now()
-            D = read_time_temp(devices, decimals=1)
-            
-            upload_time_temp(timepoint, D)
+        timepoint = datetime.datetime.now()
+        D = read_time_temp(devices, decimals=1)
 
-            timepassed = (datetime.datetime.now() - timepoint).total_seconds()
-            if SETTINGS["ALERT_MODE"]:
-                time.sleep(max(0,SETTINGS["ALERT_INTERVAL"]-timepassed))
-            else:
-                time.sleep(max(0,SETTINGS["NORMAL_INTERVAL"]-timepassed))
-            
-            
-        except KeyboardInterrupt:
-            break
+        upload_time_temp(timepoint, D)
+
+        timepassed = (datetime.datetime.now() - timepoint).total_seconds()
+        if SETTINGS["ALERT_MODE"]:
+            time.sleep(max(0,SETTINGS["ALERT_INTERVAL"]-timepassed))
+        else:
+            time.sleep(max(0,SETTINGS["NORMAL_INTERVAL"]-timepassed))
