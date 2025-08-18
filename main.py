@@ -5,7 +5,7 @@ import sys
 import glob
 import time
 import datetime
-import json
+import argparse
 from functools import cache
 
 from google.auth.transport.requests import Request
@@ -19,8 +19,8 @@ from googleapiclient.errors import HttpError
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # the file containing credentials for the service account
-SERVICE_ACCOUNT_KEY_FILE = "service-account.json"
-SPREADSHEET_ID_FILE = "spreadsheet-id.json"
+SERVICE_ACCOUNT_KEY_FILE = "config/service-account.json"
+SPREADSHEET_ID_FILE = "config/spreadsheet-id"
 
 # The ID and range of a sample spreadsheet.
 SPREADSHEET_ID = ""
@@ -43,7 +43,7 @@ SETTINGS = {
 def get_spreadsheet_id():
     global SPREADSHEET_ID
     with open(SPREADSHEET_ID_FILE, 'r') as f:
-        SPREADSHEET_ID = json.loads(f.read())["SPREADSHEET_ID"]
+        SPREADSHEET_ID = f.readlines()[0].strip()
 
 def get_credential():
     """Creates a Credential object with the correct OAuth2 authorization.
@@ -155,8 +155,16 @@ def check_for_alert_mode(data):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='script to run')
+    parser.add_argument('-d', '--data-row', type=str, help='upload this data point, comma separated, and return')
+    args = parser.parse_args()
 
     get_spreadsheet_id()
+    if args.data_row:
+        timepoint = datetime.datetime.now()
+        upload_time_temp(timepoint, [int(d) for d in args.data_row.split(",")])
+        sys.exit(0)
+
     devices = get_temp_devices()
     upload_legend(devices)
     while True:

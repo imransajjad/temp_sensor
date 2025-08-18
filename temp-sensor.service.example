@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=10
 User=keylimepi
-ExecStart=/bin/bash /home/keylimepi/projects/temp_sensor/startup.sh
+ExecStart=/home/keylimepi/bin/python3 /home/keylimepi/projects/temp_sensor/main.py
 
 [Install]
 WantedBy=multi-user.target

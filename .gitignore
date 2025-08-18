@@ -1,2 +1,5 @@
 service-account.json
 spreadsheet-id.json
+
+build/*
+config/*
