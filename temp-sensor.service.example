@@ -8,6 +8,7 @@ Type=simple
 Restart=always
 RestartSec=10
 User=keylimepi
+ExecStartPre=/usr/bin/git pull origin main
 ExecStart=/home/keylimepi/bin/python3 /home/keylimepi/temp_sensor/main.py
 
 [Install]
