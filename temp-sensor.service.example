@@ -3,12 +3,12 @@ Description=Temp Sensor Service
 After=network.target
 StartLimitIntervalSec=0
 [Service]
-WorkingDirectory=/home/keylimepi/projects/temp_sensor
+WorkingDirectory=/home/keylimepi/temp_sensor
 Type=simple
 Restart=always
 RestartSec=10
 User=keylimepi
-ExecStart=/home/keylimepi/bin/python3 /home/keylimepi/projects/temp_sensor/main.py
+ExecStart=/home/keylimepi/bin/python3 /home/keylimepi/temp_sensor/main.py
 
 [Install]
 WantedBy=multi-user.target
